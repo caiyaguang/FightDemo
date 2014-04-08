@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>4ECB512E-3FD0-4C21-8227-E636DF6D7B3C</string>
+	<key>IDESourceControlProjectName</key>
+	<string>fightdemo</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>7A8D8A80-B68F-4226-B261-31C3449FA27A</key>
+		<string>https://192.168.1.151/svn/code/client_seiya/trunk/fightdemo</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>proj.ios/fightdemo.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>7A8D8A80-B68F-4226-B261-31C3449FA27A</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectRepositoryRootDictionary</key>
+	<dict>
+		<key>7A8D8A80-B68F-4226-B261-31C3449FA27A</key>
+		<string>https://192.168.1.151/svn/code</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://192.168.1.151/svn/code/client_seiya/trunk/fightdemo/proj.ios/fightdemo.xcodeproj</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>7A8D8A80-B68F-4226-B261-31C3449FA27A</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.subversion</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>7A8D8A80-B68F-4226-B261-31C3449FA27A</string>
+			<key>IDESourceControlWCCName</key>
+			<string>fightdemo</string>
+		</dict>
+	</array>
+</dict>
+</plist>
