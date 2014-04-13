@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/code/!svn/ver/333/client_seiya/trunk/fightdemo/scripts/app/views
+END
+FightViewBg.lua
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/code/!svn/ver/325/client_seiya/trunk/fightdemo/scripts/app/views/FightViewBg.lua
+END
+BattleView.lua
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/code/!svn/ver/333/client_seiya/trunk/fightdemo/scripts/app/views/BattleView.lua
+END
+HeroView.lua
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/code/!svn/ver/333/client_seiya/trunk/fightdemo/scripts/app/views/HeroView.lua
+END
+FightAnimationLayer.lua
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/code/!svn/ver/325/client_seiya/trunk/fightdemo/scripts/app/views/FightAnimationLayer.lua
+END

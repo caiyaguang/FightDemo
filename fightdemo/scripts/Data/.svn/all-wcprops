@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/code/!svn/ver/324/client_seiya/trunk/fightdemo/scripts/Data
+END
+Opponent.lua
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/code/!svn/ver/324/client_seiya/trunk/fightdemo/scripts/Data/Opponent.lua
+END
+Config.lua
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/code/!svn/ver/324/client_seiya/trunk/fightdemo/scripts/Data/Config.lua
+END
+PlayerBase.lua
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/code/!svn/ver/324/client_seiya/trunk/fightdemo/scripts/Data/PlayerBase.lua
+END
+Player.lua
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/code/!svn/ver/324/client_seiya/trunk/fightdemo/scripts/Data/Player.lua
+END

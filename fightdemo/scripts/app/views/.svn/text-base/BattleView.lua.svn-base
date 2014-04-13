@@ -1,0 +1,88 @@
+-- 战场视图是BattleField的一个视图对象，对应着BattleField模型对象
+-- 保存每一个英雄对象
+-- 用来管理英雄对象的宏观运动
+
+local HeroView = import("..views.HeroView")
+
+local BattleView = class("BattleView", function()
+    local layer = display.newNode()
+    require("framework.api.EventProtocol").extend(layer)    -- 添加事件
+    return layer
+end)
+
+BattleView.BATTLE_ANIMATION_FINISHED = "BATTLE_ANIMATION_FINISHED"
+
+function BattleView:ctor( battleFieldObj )
+	local cls = battleFieldObj.class
+	self.views_ = {}
+	-- self.controller_ = controller
+	self.battleObj_ = battleFieldObj
+	-- 通过代理注册事件的好处：可以方便的在视图删除时，清理所以通过该代理注册的事件，
+    -- 同时不影响目标对象上注册的其他事件
+    --
+    -- EventProxy.new() --第一个参数是要注册事件的对象，第二个参数是绑定的视图
+    -- 如果指定了第二个参数，那么在视图删除时，会自动清理注册的事件
+    		-- 进入战场事件的监听
+
+    -- 添加各个英雄视图
+    self.heros_ = self.battleObj_:getAllHeros() 
+
+	-- cc.EventProxy.new(self, self.battleObj_)
+ --        :addEventListener(BattleView.BATTLE_ANIMATION_FINISHED, self.battleObj_.enterIdle, self.battleObj_)
+ 	local cls = self.battleObj_.class
+	cc.EventProxy.new(self.battleObj_, self)
+	        :addEventListener(cls.ENTER_BATTLE_EVENT, function ( event )
+	        	self:onEnterBattleAction_(event)
+	        end,self)
+
+
+    for i=1,#self.heros_ do
+    	local hero = self.heros_[i]
+    	local playerView = HeroView.new(hero):pos(0,0):addTo(self)
+    	table.insert(self.views_,playerView)
+        if hero:getSide() == 1 then
+            playerView:setPosition(ccp( display.width / 3 * hero:getPos(),-display.cy ))
+        else
+            playerView:setPosition(ccp( display.width / 3 * hero:getPos(),display.cy * 4 / 2 ))
+        end
+    end
+end
+
+-- 返回战场视图对应的战场对象
+function BattleView:getBattleField(  )
+	return self.battleObj_
+end
+
+-- 返回战场视图对应的所有英雄视图
+function BattleView:getAllHeroView(  )
+	return self.views_
+end
+
+-- 进入战场的动作
+function BattleView:onEnterBattleAction_( event )
+	for i=1,#self.views_ do
+
+		local playerView = self.views_[i]
+		local hero = playerView:getHeroInfo()
+		local array = CCArray:create()
+        local move
+        if hero:getSide() ~= 1 then
+            move = CCMoveTo:create(1,ccp(playerView:getPositionX(),display.cy + 150))
+        else
+            move = CCMoveTo:create(1,ccp(playerView:getPositionX(),display.cy - 150))
+        end
+        
+        local delay = CCDelayTime:create(1)
+        local callBack = CCCallFunc:create(function(  )
+        	self:dispatchEvent({name = BattleView.BATTLE_ANIMATION_FINISHED,actType = "enterbattle"})
+        end)
+        array:addObject(move)
+        array:addObject(delay)
+        
+        array:addObject(callBack)
+        local seq = CCSequence:create(array)
+        playerView:runAction(seq)
+	end
+end
+
+return BattleView

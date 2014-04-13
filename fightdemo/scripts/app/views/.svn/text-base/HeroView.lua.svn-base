@@ -1,0 +1,294 @@
+
+--[[--
+
+“英雄”的视图
+
+视图注册模型事件，从而在模型发生变化时自动更新视图
+
+]]
+-- 一个设置节点层叠显示颜色的方法，用来解决一个引擎bug
+local function setEnableRecursiveCascading(node, enable)
+    if node ~= nil then
+        node:setCascadeColorEnabled(enable)
+        node:setCascadeOpacityEnabled(enable)
+    end
+
+    local obj = nil
+    local children = node:getChildren()
+    if children == nil then
+        return
+    end
+
+    local i = 0
+    local len = children:count()
+    for i = 0, len-1, 1 do
+        local  child = tolua.cast(children:objectAtIndex(i), "CCNode")
+        setEnableRecursiveCascading(child, enable)
+    end
+end
+
+local HeroView = class("HeroView", function()
+    local layer = display.newNode()
+    require("framework.api.EventProtocol").extend(layer)
+    return layer
+end)
+
+HeroView.IMG_URL = "ccb/ccbResources/herobust/"
+
+-- 动作完成后的事件
+HeroView.ANIMATION_FINISHED_EVENT = "ANIMATION_FINISHED_EVENT"
+
+function HeroView:ctor(hero)
+    -- self:setCascadeOpacityEnabled(true)
+    local cls = hero.class
+
+    -- 通过代理注册事件的好处：可以方便的在视图删除时，清理所以通过该代理注册的事件，
+    -- 同时不影响目标对象上注册的其他事件
+    --
+    -- EventProxy.new() --第一个参数是要注册事件的对象，第二个参数是绑定的视图
+    -- 如果指定了第二个参数，那么在视图删除时，会自动清理注册的事件
+    cc.EventProxy.new(hero, self)
+        :addEventListener(cls.KILL_EVENT, self.onKill_, self)
+        :addEventListener(cls.ATACKING_EVENT, self.onAtacking_, self)
+        :addEventListener(cls.UNDERATK_EVENT, self.underAtk_, self)
+        :addEventListener(cls.DECREASE_HP_EVENT, self.decreaseHp_, self)
+
+    self.hero_ = hero
+    self.content = display.newSprite():addTo(self)  -- 用来放置死亡后灰色的sprite
+    self.sprite_ = display.newSprite():addTo(self)  -- 所有sprite的容器
+
+    -- rankFrame_ 就是最外层的框  rotateBg_ 是为了做一个攻击动画，可以忽略不看
+    if self.hero_:getSide() == 1 then
+        self.rotateBg_ = display.newSprite():pos(-100,-200):addTo(self.sprite_)
+        self.rankFrame_ = display.newSprite("ccb/ccbResources/cardImage/frame_4.png"):pos(100,200):addTo(self.rotateBg_)
+    else 
+        self.rotateBg_ = display.newSprite():pos(100,200):addTo(self.sprite_)
+        self.rankFrame_ = display.newSprite("ccb/ccbResources/cardImage/frame_4.png"):pos(-100,-200):addTo(self.rotateBg_)
+    end
+
+    
+    self.rankFrame_:setScale(0.4)
+
+    self.rankSprite = display.newSprite("ccb/ccbResources/cardImage/rank_4.png"):pos(0,0):addTo(self.rankFrame_)
+    display.align(self.rankSprite, display.LEFT_BOTTOM, 0, 0)
+
+    self.heroBust_ = display.newSprite(HeroView.IMG_URL..self.hero_:getImage()):addTo(self.rankFrame_)
+    local size = self.rankFrame_:getContentSize()
+    display.align(self.heroBust_, display.CENTER, size.width / 2, size.height / 2 + 40)
+    
+    self.progressBg = display.newLayer():addTo(self.rankFrame_)
+    self.progressBg:setContentSize(CCSizeMake(251,29))
+    display.align(self.progressBg, display.LEFT_BOTTOM, 65,0)
+    self.progressBg:setScaleX(0.86)
+    self.progressBg:setScaleY(1.3)
+
+    self.progressBg:setCascadeColorEnabled(true)
+    self.progressBg:setCascadeOpacityEnabled(true)
+
+    local progressSize = self.progressBg:getContentSize()
+
+    self.progress_ = CCProgressTimer:create(CCSprite:create("ccb/ccbResources/public/awardPro.png"))
+    self.progress_:setType(kCCProgressTimerTypeBar)
+    self.progress_:setMidpoint(CCPointMake(0, 0))
+    self.progress_:setBarChangeRate(CCPointMake(1, 0))
+    self.progress_:setPosition(ccp(progressSize.width / 2,progressSize.height / 2))
+    self.progressBg:addChild(self.progress_,0, 101)
+    self.progress_:setPercentage(hero:getHp(  ) / hero:getTotalHp(  ) * 100)
+
+    -- 这个方法用来设置颜色层叠
+    setEnableRecursiveCascading(self,true)
+end
+
+function HeroView:getHeroInfo(  )
+    return self.hero_
+end
+
+function HeroView:setCostomColor()
+
+    setEnableRecursiveCascading(self,true)
+end
+
+-- 正在减血
+function HeroView:decreaseHp_( event )
+    local damageLabel = ui.newTTFLabel({
+        text = "-"..event.damage,
+        size = 22,
+        color = display.COLOR_RED,
+    }):pos(0,90)
+    :addTo(self, 1000)
+    transition.moveBy(damageLabel, {y = 50, time = 1, onComplete = function()
+        damageLabel:removeSelf()
+    end})
+    self.progress_:runAction(CCProgressFromTo:create(0.8, self.progress_:getPercentage(), self:getHeroInfo():getHp(  ) / self:getHeroInfo():getTotalHp(  ) * 100))
+end
+
+-- 划刀的攻击
+function HeroView:onAtacking_( event )
+    local actArray = CCArray:create()
+
+    local scale1 = CCRotateBy:create(0.03,-5)
+    local delayTime1 = CCDelayTime:create(0.04)
+    local scale2 = CCRotateBy:create(0.03,-5)
+    local delayTime2 = CCDelayTime:create(0.03)
+    local scale3 = CCRotateBy:create(0.03,-5)
+    local delayTime3 = CCDelayTime:create(0.1)
+    local scale4 = CCRotateBy:create(0.001,25)
+    local delayTime4 = CCDelayTime:create(0.1)
+    local scale5 = CCRotateBy:create(0.02,-10)
+    local delayTime5 = CCDelayTime:create(0.01)
+    local scale6 = CCRotateBy:create(0.02, -5)
+    local delayTime6 = CCDelayTime:create(0.01)
+    local scale7 = CCRotateBy:create(0.01,5)
+    local callBack = CCCallFunc:create(function (  )
+        self:dispatchEvent({name = HeroView.ANIMATION_FINISHED_EVENT,actType = "atking"})
+    end)
+
+    actArray:addObject(scale1)
+    actArray:addObject(delayTime1)
+    actArray:addObject(scale2)
+    actArray:addObject(delayTime2)
+    actArray:addObject(scale3)
+    actArray:addObject(delayTime3)
+    actArray:addObject(scale4)
+    actArray:addObject(delayTime4)
+    actArray:addObject(scale5)
+    actArray:addObject(delayTime5)
+    actArray:addObject(scale6)
+    actArray:addObject(delayTime6)
+    actArray:addObject(scale7)
+    actArray:addObject(callBack)
+
+    return self.rotateBg_:runAction(CCSequence:create(actArray))
+end
+-- 普通放大攻击动画
+-- function HeroView:onAtacking_( event )
+--     local actArray = CCArray:create()
+--     local delayTime0 = CCDelayTime:create(0.1)
+--     local scale1 = CCScaleBy:create(0.01,0.95)
+--     local delayTime1 = CCDelayTime:create(0.01)
+--     local scale2 = CCScaleBy:create(0.01,0.75)
+--     local delayTime2 = CCDelayTime:create(0.03)
+--     local scale3 = CCScaleBy:create(0.01,0.98)
+--     local delayTime3 = CCDelayTime:create(0.01)
+--     local scale4 = CCScaleBy:create(0.01,0.98)
+--     local delayTime4 = CCDelayTime:create(0.02)
+--     local scale5 = CCScaleBy:create(0.01,0.98)
+--     local delayTime5 = CCDelayTime:create(0.03)
+--     local scale6 = CCScaleBy:create(0.01,0.8)
+--     local delayTime6 = CCDelayTime:create(0.04)
+--     local scale7 = CCScaleTo:create(0.01,0.55)
+--     -- local callFun = CCCallFunc:create(startShake)
+--     local delayTime7 = CCDelayTime:create(0.05)
+--     local scale8 = CCScaleTo:create(0.01,0.4)
+--     local callBack = CCCallFunc:create(function (  )
+--         self:dispatchEvent({name = HeroView.ANIMATION_FINISHED_EVENT,actType = "atking"})
+--     end)
+
+--     actArray:addObject(delayTime0)
+--     actArray:addObject(scale1)
+--     actArray:addObject(delayTime1)
+--     actArray:addObject(scale2)
+--     actArray:addObject(delayTime2)
+--     actArray:addObject(scale3)
+--     actArray:addObject(delayTime3)
+--     actArray:addObject(scale4)
+--     actArray:addObject(delayTime4)
+--     actArray:addObject(scale5)
+--     actArray:addObject(delayTime5)
+--     actArray:addObject(scale6)
+--     actArray:addObject(delayTime6)
+--     actArray:addObject(scale7)
+--     -- 有四分之一的概率触发震屏
+--     -- math.randomseed(os.time())
+--     -- local x = math.random()
+--     -- if x >= 0 and x <= 0.8 then
+--     --     actArray:addObject(callFun)
+--     -- end
+--     actArray:addObject(delayTime7)
+--     actArray:addObject(scale8)
+--     actArray:addObject(callBack)
+--     self:runAction(CCSequence:create(actArray)) 
+-- end
+
+-- -- 普通旋转攻击的动作
+-- function HeroView:onAtacking_( event )
+--     -- 获得攻击的人
+--     -- 播放攻击的动作
+--     local array = CCArray:create()
+--     local rotateLeft = CCRotateBy:create(0.1,-30)
+--     local deleyTime1 = CCDelayTime:create(0.01)
+--     local rotateRight = CCRotateBy:create(0.1,90)
+--     local deleyTime2 = CCDelayTime:create(0.01)
+--     local rotateBack = CCRotateBy:create(0.05,-60)
+--     local callBack = CCCallFunc:create(function (  )
+--         self:dispatchEvent({name = HeroView.ANIMATION_FINISHED_EVENT,actType = "atking"})
+--     end)
+--     array:addObject(rotateLeft)
+--     array:addObject(deleyTime1)
+--     array:addObject(rotateRight)
+--     array:addObject(deleyTime2)
+--     array:addObject(rotateBack)
+--     array:addObject(callBack)
+--     self:runAction(CCSequence:create(array))
+-- end
+-- 当英雄死亡的时候的动作
+-- 1 使参数图片不可见
+-- 2 新建灰白图片
+function HeroView:onKill_(event)
+    -- self.sprite_:removeAllChildren()
+    self:runAction(CCSequence:createWithTwoActions(CCFadeOut:create(0.05),CCCallFunc:create(function (  )
+            self:dispatchEvent({name = HeroView.ANIMATION_FINISHED_EVENT,actType = "kill"})
+    end)) )
+    self.rankFrame1_ = CCGraySprite:create("ccb/ccbResources/cardImage/frame_4.png")
+    self.rankFrame1_:setScale(0.4)
+    self.content:addChild(self.rankFrame1_)
+   
+    self.rankSprite1 = CCGraySprite:create("ccb/ccbResources/cardImage/rank_4.png")
+    self.rankSprite1:setAnchorPoint(ccp(0,0))
+    self.rankFrame1_:addChild(self.rankSprite1)
+
+    self.heroBust1_ = CCGraySprite:create(HeroView.IMG_URL..self.hero_:getImage())
+    self.rankFrame1_:addChild(self.heroBust1_)
+    local size = self.rankFrame1_:getContentSize()
+    self.heroBust1_:setPosition(ccp(size.width / 2, size.height / 2 + 40))
+
+    -- local progressSize = self.progressBg:getContentSize()
+
+    -- self.progress_:removeFromParentAndCleanup()
+    -- self.progress_ = CCProgressTimer:create(CCGraySprite:create("ccb/ccbResources/public/awardPro.png"))
+    -- self.progress_:setType(kCCProgressTimerTypeBar)
+    -- self.progress_:setMidpoint(CCPointMake(0, 0))
+    -- self.progress_:setBarChangeRate(CCPointMake(1, 0))
+    -- self.progress_:setPosition(ccp(progressSize.width / 2,progressSize.height / 2))
+    -- self.progressBg:addChild(self.progress_,0, 101)
+    -- self.progress_:setPercentage(100)
+
+    -- self.progress_:setCascadeColorEnabled(true)
+    -- self.progress_:setCascadeOpacityEnabled(true)
+    -- self.progress_:runAction(CCTintTo:create(0.001,123,123,123))
+end
+
+-- 正在遭受攻击动作
+-- 当动作结束会发送动作完成的消息
+function HeroView:underAtk_( event )
+    local array = CCArray:create()
+    local moveUp = CCMoveBy:create(0.1,ccp(0,10))
+    local tintToRed = CCTintTo:create(0.01,255,0,0)
+    local moveDown = CCMoveBy:create(0.1,ccp(0,-20))
+    local tintBack = CCTintTo:create(0.01,255,255,255)
+    local moveBack = CCMoveBy:create(0.1,ccp(0,10))
+    local delayTime = CCDelayTime:create(0.2)
+    local callBack = CCCallFunc:create(function (  )
+        self:dispatchEvent({name = HeroView.ANIMATION_FINISHED_EVENT,actType = "underatk"})
+    end)
+    array:addObject(moveUp)
+    array:addObject(tintToRed)
+    array:addObject(moveDown)
+    array:addObject(tintBack)
+    array:addObject(moveBack)
+    array:addObject(delayTime)
+    array:addObject(callBack)
+    self:runAction(CCSequence:create(array))
+end
+
+return HeroView

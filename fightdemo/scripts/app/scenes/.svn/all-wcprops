@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/code/!svn/ver/333/client_seiya/trunk/fightdemo/scripts/app/scenes
+END
+FightScene.lua
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/svn/code/!svn/ver/333/client_seiya/trunk/fightdemo/scripts/app/scenes/FightScene.lua
+END
+MainScene.lua
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/code/!svn/ver/326/client_seiya/trunk/fightdemo/scripts/app/scenes/MainScene.lua
+END
+FightResultScene.lua
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/code/!svn/ver/325/client_seiya/trunk/fightdemo/scripts/app/scenes/FightResultScene.lua
+END
