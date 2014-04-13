@@ -1,4 +1,4 @@
-require "CCBReaderLoad"
+require "Util/CCBReaderLoad"
 
 MainViewOwner = MainViewOwner or {}
 ccb["MainViewOwner"] = MainViewOwner

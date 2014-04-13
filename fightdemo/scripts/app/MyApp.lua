@@ -36,6 +36,7 @@ function MyApp:enterResultScene(  )
 end
 
 function MyApp:setObject(id, object)
+    
     assert(self.objects_[id] == nil, string.format("MyApp:setObject() - id \"%s\" already exists", id))
     self.objects_[id] = object
 end

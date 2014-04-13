@@ -6,16 +6,8 @@
 视图注册模型事件，从而在模型发生变化时自动更新视图
 
 ]]
--- local FightController = import("..controller.FightController")
-HeroCardOwner = HeroCardOwner or {}
-ccb["HeroCardOwner"] = HeroCardOwner
-
+-- 一个设置节点层叠显示颜色的方法，用来解决一个引擎bug
 local function setEnableRecursiveCascading(node, enable)
-    if node == nil then
-        -- cclog("node == nil, return directly")
-        return
-    end
-
     if node ~= nil then
         node:setCascadeColorEnabled(enable)
         node:setCascadeOpacityEnabled(enable)
@@ -24,13 +16,12 @@ local function setEnableRecursiveCascading(node, enable)
     local obj = nil
     local children = node:getChildren()
     if children == nil then
-        -- cclog("children is nil")
         return
     end
 
     local i = 0
     local len = children:count()
-    for i = 0, len-1, 1 do
+    for i = 0, len - 1, 1 do
         local  child = tolua.cast(children:objectAtIndex(i), "CCNode")
         setEnableRecursiveCascading(child, enable)
     end
@@ -42,13 +33,14 @@ local HeroView = class("HeroView", function()
     return layer
 end)
 
+HeroView.IMG_URL = "ccb/ccbResources/herobust/"
+
 -- 动作完成后的事件
 HeroView.ANIMATION_FINISHED_EVENT = "ANIMATION_FINISHED_EVENT"
 
-function HeroView:ctor(hero,controller)
+function HeroView:ctor(hero)
     -- self:setCascadeOpacityEnabled(true)
     local cls = hero.class
-    self.controller_ = controller
 
     -- 通过代理注册事件的好处：可以方便的在视图删除时，清理所以通过该代理注册的事件，
     -- 同时不影响目标对象上注册的其他事件
@@ -56,46 +48,34 @@ function HeroView:ctor(hero,controller)
     -- EventProxy.new() --第一个参数是要注册事件的对象，第二个参数是绑定的视图
     -- 如果指定了第二个参数，那么在视图删除时，会自动清理注册的事件
     cc.EventProxy.new(hero, self)
-        -- :addEventListener(cls.CHANGE_STATE_EVENT, self.onStateChange_, self)
         :addEventListener(cls.KILL_EVENT, self.onKill_, self)
         :addEventListener(cls.ATACKING_EVENT, self.onAtacking_, self)
         :addEventListener(cls.UNDERATK_EVENT, self.underAtk_, self)
         :addEventListener(cls.DECREASE_HP_EVENT, self.decreaseHp_, self)
-    --     :addEventListener(cls.UNDER_VERTIGO_EVENT, self.enterVertigo, self)
-    --     :addEventListener(cls.RELEASE_VERTIGO_EVENT, self.leaveVertigo, self)
-    --     :addEventListener(cls.CDTIME_CD_EVENT,self.updateCdLabel_, self)
 
     self.hero_ = hero
-    self.content = display.newSprite():addTo(self)
-    self.sprite_ = display.newSprite():addTo(self)
+    self.content = display.newSprite():addTo(self)  -- 用来放置死亡后灰色的sprite
+    self.sprite_ = display.newSprite():addTo(self)  -- 所有sprite的容器
 
-    -- self.sprite_:setColor(ccc3(123,123,123))
-    -- self.sprite_:setCascadeColorEnabled(true)
-    -- self.sprite_:setCascadeOpacityEnabled(true)
+    -- rankFrame_ 就是最外层的框  rotateBg_ 是为了做一个攻击动画，可以忽略不看
+    if self.hero_:getSide() == 1 then
+        self.rotateBg_ = display.newSprite():pos(-100,-200):addTo(self.sprite_)
+        self.rankFrame_ = display.newSprite("ccb/ccbResources/cardImage/frame_4.png"):pos(100,200):addTo(self.rotateBg_)
+    else 
+        self.rotateBg_ = display.newSprite():pos(100,200):addTo(self.sprite_)
+        self.rankFrame_ = display.newSprite("ccb/ccbResources/cardImage/frame_4.png"):pos(-100,-200):addTo(self.rotateBg_)
+    end
 
-    -- self.contentLayer = display.newColorLayer(ccc4(123,1,111,255)):addTo(self.sprite_)
-    -- -- self.contentLayer = display.newLayer():addTo(self.sprite_)
-    -- self.contentLayer:setContentSize(CCSizeMake(130,170))
-    -- display.align(self.contentLayer, display.LEFT_BOTTOM, -60,-80)
-
-    -- self.contentLayer:setCascadeColorEnabled(true)
-    -- self.contentLayer:setCascadeOpacityEnabled(true)
-    -- self.contentLayer:setOpacity(50)
-
-    self.rankFrame_ = display.newSprite("ccb/ccbResources/cardImage/frame_4.png"):pos(0,0):addTo(self.sprite_)
+    
     self.rankFrame_:setScale(0.4)
 
     self.rankSprite = display.newSprite("ccb/ccbResources/cardImage/rank_4.png"):pos(0,0):addTo(self.rankFrame_)
     display.align(self.rankSprite, display.LEFT_BOTTOM, 0, 0)
 
-    self.heroBust_ = display.newSprite("ccb/ccbResources/herobust/hero_000406_bust_1.png"):addTo(self.rankFrame_)
+    self.heroBust_ = display.newSprite(HeroView.IMG_URL..self.hero_:getImage()):addTo(self.rankFrame_)
     local size = self.rankFrame_:getContentSize()
     display.align(self.heroBust_, display.CENTER, size.width / 2, size.height / 2 + 40)
-
-    -- self.heroBust_:setColor(ccc3(200,200,0))
-
-    -- self.heroBust_:setColor(ccc3(200,200,0))
-    -- local progressBg = display.newColorLayer(ccc4(123,23,55,255)):addTo(self.rankFrame_)
+    
     self.progressBg = display.newLayer():addTo(self.rankFrame_)
     self.progressBg:setContentSize(CCSizeMake(251,29))
     display.align(self.progressBg, display.LEFT_BOTTOM, 65,0)
@@ -115,17 +95,7 @@ function HeroView:ctor(hero,controller)
     self.progressBg:addChild(self.progress_,0, 101)
     self.progress_:setPercentage(hero:getHp(  ) / hero:getTotalHp(  ) * 100)
 
-    -- progress:setOpacity(50)
-    -- progress:setCascadeColorEnabled(true)
-    -- progress:setCascadeOpacityEnabled(true)
-    -- progressBg:setOpacity(50)
-    -- self.sprite_:runAction(CCFadeOut:create(5))
-
-    -- setEnableRecursiveCascading(self,true)
-
-    -- local array = CCArray:create()
-    -- array:addObject(CCTintTo:create(0.01, 255, 0, 0))
-    -- self:runAction(CCSequence:create(array))
+    -- 这个方法用来设置颜色层叠
     setEnableRecursiveCascading(self,true)
 end
 
@@ -138,55 +108,69 @@ function HeroView:setCostomColor()
     setEnableRecursiveCascading(self,true)
 end
 
--- function HeroView:flipX(flip)
---     self.sprite_:flipX(flip)
---     return self
--- end
-
--- function HeroView:isFlipX()
---     return self.sprite_:isFlipX()
--- end
-
--- function HeroView:onStateChange_(event)
---     self:updateSprite_(self.hero_:getState())
--- end
-
 -- 正在减血
 function HeroView:decreaseHp_( event )
     local damageLabel = ui.newTTFLabel({
-            text = "-"..event.damage,
-            size = 22,
-            color = display.COLOR_RED,
-        }):pos(0,90)
-        :addTo(self, 1000)
-        transition.moveBy(damageLabel, {y = 50, time = 1, onComplete = function()
-            damageLabel:removeSelf()
-        end})
-    self.progress_:setPercentage(self:getHeroInfo():getHp(  ) / self:getHeroInfo():getTotalHp(  ) * 100)
+        text = "-"..event.damage,
+        size = 22,
+        color = display.COLOR_RED,
+    }):pos(0,90)
+    :addTo(self, 1000)
+    transition.moveBy(damageLabel, {y = 50, time = 1, onComplete = function()
+        damageLabel:removeSelf()
+    end})
+    self.progress_:runAction(CCProgressFromTo:create(0.5, self.progress_:getPercentage(), self:getHeroInfo():getHp(  ) / self:getHeroInfo():getTotalHp(  ) * 100))
 end
 
--- 正在攻击时的动作
+-- 划刀的攻击
 function HeroView:onAtacking_( event )
-    -- 获得攻击的人
-    -- 播放攻击的动作
-    local array = CCArray:create()
-    local rotateLeft = CCRotateBy:create(0.1,-30)
-    local deleyTime1 = CCDelayTime:create(0.01)
-    local rotateRight = CCRotateBy:create(0.1,90)
-    local deleyTime2 = CCDelayTime:create(0.01)
-    local rotateBack = CCRotateBy:create(0.05,-60)
-    local callBack = CCCallFunc:create(function (  )
-        self:dispatchEvent({name = HeroView.ANIMATION_FINISHED_EVENT,actType = "atking"})
-    end)
-    array:addObject(rotateLeft)
-    array:addObject(deleyTime1)
-    array:addObject(rotateRight)
-    array:addObject(deleyTime2)
-    array:addObject(rotateBack)
-    array:addObject(callBack)
-    self:runAction(CCSequence:create(array))
-end
+    local targets = event.targetModel 
+    -- print("我去    "..event.name.."    "..#event.targetModel)
 
+    
+    local actArray = CCArray:create()
+
+    local scale1 = CCRotateBy:create(0.03,-5)
+    local delayTime1 = CCDelayTime:create(0.04)
+    local scale2 = CCRotateBy:create(0.03,-5)
+    local delayTime2 = CCDelayTime:create(0.03)
+    local scale3 = CCRotateBy:create(0.03,-5)
+    local delayTime3 = CCDelayTime:create(0.1)
+    local scale4 = CCRotateBy:create(0.001,25)
+    -- 开始对目标进行伤害
+    local sendInfoToTarget = CCCallFunc:create(function (  )
+        --[[获得目标的模型，并调用目标的受攻击方法]]
+        -- 发送攻击成功的消息 对方进入被攻击状态 开始减血 自身扣除魔法值
+        -- for i=1,#targets do
+        --     local targetObj = targets[i]
+        --     targetObj.target:underAtk( targetObj.damage )
+        --     -- 更新自己model   减少魔法值 增加攻击cd
+        -- end
+    end)
+    local delayTime4 = CCDelayTime:create(0.1)
+    local scale5 = CCRotateBy:create(0.02,-10)
+    local delayTime5 = CCDelayTime:create(0.01)
+    local scale6 = CCRotateBy:create(0.02, -5)
+    local delayTime6 = CCDelayTime:create(0.01)
+    local scale7 = CCRotateBy:create(0.01,5)
+    local callBack = CCCallFunc:create(function (  )
+        self:dispatchEvent({name = HeroView.ANIMATION_FINISHED_EVENT,actType = "atking",atker = self})
+    end)
+    local tempArray = { scale1,delayTime1,scale2,delayTime2,
+                        scale3,delayTime3,scale4,
+                        sendInfoToTarget,delayTime4,
+                        scale5,delayTime5,scale6,
+                        delayTime6,scale7,callBack
+                     }
+    for i=1,#tempArray do
+        actArray:addObject(tempArray[i])
+    end
+
+    return self.rotateBg_:runAction(CCSequence:create(actArray))
+end
+-- 当英雄死亡的时候的动作
+-- 1 使参数图片不可见
+-- 2 新建灰白图片
 function HeroView:onKill_(event)
     -- self.sprite_:removeAllChildren()
     self:runAction(CCSequence:createWithTwoActions(CCFadeOut:create(0.05),CCCallFunc:create(function (  )
@@ -200,28 +184,14 @@ function HeroView:onKill_(event)
     self.rankSprite1:setAnchorPoint(ccp(0,0))
     self.rankFrame1_:addChild(self.rankSprite1)
 
-    self.heroBust1_ = CCGraySprite:create("ccb/ccbResources/herobust/hero_000406_bust_1.png")
+    self.heroBust1_ = CCGraySprite:create(HeroView.IMG_URL..self.hero_:getImage())
     self.rankFrame1_:addChild(self.heroBust1_)
     local size = self.rankFrame1_:getContentSize()
     self.heroBust1_:setPosition(ccp(size.width / 2, size.height / 2 + 40))
-
-    local progressSize = self.progressBg:getContentSize()
-
-    -- self.progress_:removeFromParentAndCleanup()
-    -- self.progress_ = CCProgressTimer:create(CCGraySprite:create("ccb/ccbResources/public/awardPro.png"))
-    -- self.progress_:setType(kCCProgressTimerTypeBar)
-    -- self.progress_:setMidpoint(CCPointMake(0, 0))
-    -- self.progress_:setBarChangeRate(CCPointMake(1, 0))
-    -- self.progress_:setPosition(ccp(progressSize.width / 2,progressSize.height / 2))
-    -- self.progressBg:addChild(self.progress_,0, 101)
-    -- self.progress_:setPercentage(100)
-
-    -- self.progress_:setCascadeColorEnabled(true)
-    -- self.progress_:setCascadeOpacityEnabled(true)
-    -- self.progress_:runAction(CCTintTo:create(0.001,123,123,123))
 end
 
--- 正在遭受攻击
+-- 正在遭受攻击动作
+-- 当动作结束会发送动作完成的消息
 function HeroView:underAtk_( event )
     local array = CCArray:create()
     local moveUp = CCMoveBy:create(0.1,ccp(0,10))
